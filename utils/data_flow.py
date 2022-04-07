@@ -16,9 +16,9 @@ def model_train(cfg, Net, train_loader, criterion, criterion1, optimizer, epoch)
                                   epoch * cfg.data_size/cfg.batchsize + step)
         # 获取图片和标签
         image, label_av_, label_v_, _ = data
-        inputs = Variable(image.cuda())
-        label_av = Variable(label_av_.cuda().type(torch.long))
-        label_v = Variable(label_v_.cuda().type(torch.long))
+        inputs = Variable(image.cuda() if torch.cuda.is_available() else image)
+        label_av = Variable(label_av_.cuda().type(torch.long) if torch.cuda.is_available() else label_av_.type(torch.long))
+        label_v = Variable(label_v_.cuda().type(torch.long) if torch.cuda.is_available() else label_v_.type(torch.long))
         # https://blog.csdn.net/VictoriaW/article/details/72673110
         # ================================ ##        优化
         optimizer.zero_grad()
@@ -44,7 +44,7 @@ def model_validate(cfg, Net, validate_loader, epoch):
             # 获取图片和标签
             image1, label_av_, label_v_, mask = data
             # image1 = paint_border(image1, cfg.patch_size, cfg.patch_stride, False)
-            inputs = Variable(image1.cuda())
+            inputs = Variable(image1.cuda() if torch.cuda.is_available() else image1)
 
             outputs, ves = Net(inputs)
             # outputs1, ves1 = Net(inputs)
@@ -86,7 +86,7 @@ def model_validate_patch(cfg, Net, validate_loader, epoch):
             image1, label_av_, label_v_, mask = data
             patches_pred, new_size = get_test_patches(image1, cfg.patch_size, cfg.patch_stride)
 
-            inputs = Variable(patches_pred.cuda())
+            inputs = Variable(patches_pred.cuda() if torch.cuda.is_available() else patches_pred)
             cnt = len(inputs)
             outputs = []
             vessel = []

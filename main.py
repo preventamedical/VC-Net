@@ -10,9 +10,13 @@ from utils.utils import save_model, finetune_load, make_log
 from utils.mydataset import MyDataset
 from utils.data_flow import model_validate, model_train, model_validate_patch
 from experiments.config import process_config
+import torch, gc
 
 
 def main():
+    gc.collect()
+    torch.cuda.empty_cache()
+    device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
     # ------------------------------------ step 0 : 获取参数-----------------------------------------------
     cfg_path = './experiments/drive_av/standard.json'
     cfg = process_config(cfg_path)
@@ -28,13 +32,15 @@ def main():
     # Init model
     from model.VC_Net import VC_Net as net
     if cfg.finetune == True:
-        Net = net(cfg.channels, cfg.num_class).cuda()
+        Net = net(cfg.channels, cfg.num_class)
         finetune_load(Net, cfg.pkl_path, False)
     else:
-        Net = net(cfg.channels, cfg.num_class, True).cuda()
+        Net = net(cfg.channels, cfg.num_class, True)
+
+    net.to(device)
     # ------------------------------------ step 3 : 定义损失函数和优化器 ------------------------------------
-    criterion = nn.CrossEntropyLoss().cuda()  # 选择损失函数
-    criterion1 = nn.BCELoss().cuda()  # 选择损失函数
+    criterion = nn.CrossEntropyLoss().cuda() if torch.cuda.is_available() else nn.CrossEntropyLoss()
+    criterion1 = nn.BCELoss().cuda() if torch.cuda.is_available() else nn.BCELoss()
     optimizer = optim.Adam(Net.parameters(), lr=cfg.lr, weight_decay=1e-5)  # 选择优化器
     # ------------------------------------ step 4 : 训练 --------------------------------------------------
     # ================================ ##        新建writer

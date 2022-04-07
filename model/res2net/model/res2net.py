@@ -233,7 +233,7 @@ def res2net50_14w_8s(pretrained=False, **kwargs):
 
 
 if __name__ == '__main__':
-    images = torch.rand(1, 3, 224, 224).cuda(0)
+    images = torch.rand(1, 3, 224, 224).cuda(0) if torch.cuda.is_available() else torch.rand(1, 3, 224, 224)
     model = res2net101_26w_4s(pretrained=True)
-    model = model.cuda(0)
+    model = model.cuda(0) if torch.cuda.is_available() else model
     print(model(images).size())
