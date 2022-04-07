@@ -8,6 +8,7 @@ from model.res2net.model.res2net import res2net50
 
 nn.AdaptiveAvgPool2d(1)
 
+
 class conv_block(nn.Module):
     """
     Convolution Block
@@ -44,12 +45,13 @@ class up_conv(nn.Module):
 
     def forward(self, x):
         # x = F.interpolate(x, size=None,scale_factor=2, align_corners=True)
-        x = F.interpolate(x, size=None,scale_factor=2)
+        x = F.interpolate(x, size=None, scale_factor=2)
         x = self.up(x)
         return x
 
+
 class VC_Net(nn.Module):
-    def __init__(self,  in_ch=3, out_ch=3, is_pretrained=True):
+    def __init__(self, in_ch=3, out_ch=3, is_pretrained=True):
         super(VC_Net, self).__init__()
 
         n1 = 64
@@ -60,10 +62,10 @@ class VC_Net(nn.Module):
         self.Conv1 = conv_block(in_ch, filters[0])
         self.Maxpool1 = nn.MaxPool2d(kernel_size=2, stride=2)
 
-        self.encoder1 = res2net.layer1#torch.Size([2, 256, 256, 256])
-        self.encoder2 = res2net.layer2#torch.Size([2, 512, 128, 128])
-        self.encoder3 = res2net.layer3#torch.Size([2, 1024, 64, 64])
-        self.encoder4 = res2net.layer4#torch.Size([2, 2048, 32, 32])
+        self.encoder1 = res2net.layer1  # torch.Size([2, 256, 256, 256])
+        self.encoder2 = res2net.layer2  # torch.Size([2, 512, 128, 128])
+        self.encoder3 = res2net.layer3  # torch.Size([2, 1024, 64, 64])
+        self.encoder4 = res2net.layer4  # torch.Size([2, 2048, 32, 32])
 
         self.Conv5 = conv_block(filters[4], filters[4])
 
@@ -78,7 +80,7 @@ class VC_Net(nn.Module):
 
         self.Up2 = up_conv(filters[1], int(filters[1] / 2))
         self.Up_conv2 = conv_block(int(filters[1] / 2) + filters[0], filters[0])
-        self.Up_conv21 = conv_block(filters[0], int(filters[0] / 2))#32
+        self.Up_conv21 = conv_block(filters[0], int(filters[0] / 2))  # 32
 
         self.conv_v = conv_block(int(filters[0] / 2), int(filters[0] / 2))
         self.conv_v_1 = nn.Conv2d(int(filters[0] / 2), 1, kernel_size=1, stride=1, padding=0)
@@ -86,21 +88,20 @@ class VC_Net(nn.Module):
 
         self.conv_av = conv_block(int(filters[0] / 2), int(filters[0] / 2))
 
-
         self.Conv = nn.Conv2d(filters[0], out_ch, kernel_size=1, stride=1, padding=0)
 
     def forward(self, x):
         # Encoder
         e0 = self.Conv1(x)
-        xm = self.Maxpool1(e0)#64-256
+        xm = self.Maxpool1(e0)  # 64-256
 
-        e1 = self.encoder1(xm)#256-256
-        e2 = self.encoder2(e1)#512-128
-        e3 = self.encoder3(e2)#1024-64
+        e1 = self.encoder1(xm)  # 256-256
+        e2 = self.encoder2(e1)  # 512-128
+        e3 = self.encoder3(e2)  # 1024-64
 
-        e4 = self.encoder4(e3)#2048-32
+        e4 = self.encoder4(e3)  # 2048-32
 
-        #centeer
+        # centeer
         e5 = self.Conv5(e4)
 
         # Decoder
@@ -125,14 +126,12 @@ class VC_Net(nn.Module):
         d0_v = self.conv_v(d1)
         d0_v1 = self.conv_v_1(d0_v)
         d0_v1_bn = self.bn(d0_v1)
-        d0_v1_bn_s = F.sigmoid(d0_v1_bn)
+        d0_v1_bn_s = torch.sigmoid(d0_v1_bn)
 
         # d0_v1_bn_s_5_e = (torch.exp(-torch.pow(d0_v1_bn_s - 0.5, 1)) - torch.exp(-1/2))+ 1
-        d0_v1_bn_s_5_e = (torch.exp(-torch.abs(d0_v1_bn_s - 0.5)) - torch.exp(torch.tensor(-1/2)))+ 1
-
+        d0_v1_bn_s_5_e = (torch.exp(-torch.abs(d0_v1_bn_s - 0.5)) - torch.exp(torch.tensor(-1 / 2))) + 1
 
         d0_av = self.conv_av(d1)
-
 
         d0_cat = torch.cat((d0_av, d0_v), dim=1)
         d0_ = d0_cat * d0_v1_bn_s_5_e * d0_v1_bn_s
