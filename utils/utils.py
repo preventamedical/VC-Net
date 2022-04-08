@@ -6,6 +6,7 @@ import numpy as np
 from decimal import *
 import torchvision.utils as vutils
 from utils.record_db import start_expr
+
 _join = os.path.join
 
 
@@ -26,11 +27,13 @@ def save_model(log_dir, Net, current_result, mean_result, epoch):
         current_result = mean_result
     return current_result
 
+
 def adjust_learning_rate(optimizer, base_lr, max_iters,
-                             cur_iters, power=0.9):
+                         cur_iters, power=0.9):
     lr = base_lr * ((1 - float(cur_iters) / max_iters) ** (power))
     optimizer.param_groups[0]['lr'] = lr
     return lr
+
 
 def finetune_load(Net, pkl_path, is_parallel=False):
     # load params
@@ -53,9 +56,11 @@ def finetune_load(Net, pkl_path, is_parallel=False):
     # 将包含预训练模型参数的字典"放"到新模型中
     Net.load_state_dict(net_state_dict)
 
+
 def myprint(logging, message):
     logging.info(message)
     print(message)
+
 
 def print_writer_scalar(writer, logging, dict_message, step, mode):
     if mode == 'train':
@@ -69,13 +74,14 @@ def print_writer_scalar(writer, logging, dict_message, step, mode):
     if mode == 'train':
         myprint(logging, message)
     else:
-        myprint(logging, message+'\n')
+        myprint(logging, message + '\n')
+
 
 def print_writer_scalars(writer, dict_message_train, dict_message_test, step):
     for key in dict_message_test:
         writer.add_scalars('all_result/%s' % key,
-                           {'train_%s'%key:dict_message_train[key],
-                            'test_%s'%key:dict_message_test[key]}, step)
+                           {'train_%s' % key: dict_message_train[key],
+                            'test_%s' % key: dict_message_test[key]}, step)
 
 
 def make_log(current_dir, result_dir, dataset_name, experment_name, fun, cfg_path):
@@ -97,4 +103,3 @@ def make_log(current_dir, result_dir, dataset_name, experment_name, fun, cfg_pat
                         format='%(asctime)s - : %(message)s')
 
     return log_dir, logging
-

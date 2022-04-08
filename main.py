@@ -1,16 +1,15 @@
-from tensorboardX import SummaryWriter
-import torch.optim as optim
-from torch import nn
-import torch
 import os
+import torch
+import torch.optim as optim
+from tensorboardX import SummaryWriter
+from torch import nn
+import gc
 
 _join = os.path.join
-
 from utils.utils import save_model, finetune_load, make_log
 from utils.mydataset import MyDataset
 from utils.data_flow import model_validate, model_train, model_validate_patch
 from experiments.config import process_config
-import torch, gc
 
 
 def main():
@@ -55,7 +54,7 @@ def main():
         else:
             cfg.frequency_show = 1
         # ================================ ##        测试
-        if epoch != 0 and epoch % (cfg.frequency_show) == 0:
+        if epoch != 0 and epoch % cfg.frequency_show == 0:
             if cfg.dataset_name == 'DRIVE_AV':
                 mean_accuracy_v = model_validate(cfg, Net, validate_loader, epoch)
             else:

@@ -5,19 +5,20 @@ from torch.autograd import Variable
 from utils.metrics import metrics_test_drive_all, metrics_test_drive_dice
 from utils.utils import adjust_learning_rate, print_writer_scalar
 
-def model_train(cfg, Net, train_loader, criterion, criterion1, optimizer, epoch):
 
+def model_train(cfg, Net, train_loader, criterion, criterion1, optimizer, epoch):
     loss_sigma = []  # 记录一个epoch的loss之和
     Net.train()
     for step, data in enumerate(train_loader):
         _ = adjust_learning_rate(optimizer,
-                                  cfg.lr,
-                                  cfg.max_epoch * cfg.data_size/cfg.batchsize,
-                                  epoch * cfg.data_size/cfg.batchsize + step)
+                                 cfg.lr,
+                                 cfg.max_epoch * cfg.data_size / cfg.batchsize,
+                                 epoch * cfg.data_size / cfg.batchsize + step)
         # 获取图片和标签
         image, label_av_, label_v_, _ = data
         inputs = Variable(image.cuda() if torch.cuda.is_available() else image)
-        label_av = Variable(label_av_.cuda().type(torch.long) if torch.cuda.is_available() else label_av_.type(torch.long))
+        label_av = Variable(
+            label_av_.cuda().type(torch.long) if torch.cuda.is_available() else label_av_.type(torch.long))
         label_v = Variable(label_v_.cuda().type(torch.long) if torch.cuda.is_available() else label_v_.type(torch.long))
         # https://blog.csdn.net/VictoriaW/article/details/72673110
         # ================================ ##        优化
@@ -36,9 +37,20 @@ def model_train(cfg, Net, train_loader, criterion, criterion1, optimizer, epoch)
     # ================================ ##        更新writer缓存区
     cfg.writer.flush()
 
+
 from utils.data_utils import paint_border
+
+
 def model_validate(cfg, Net, validate_loader, epoch):
-    F1AV = []; SE_AV = []; SP_AV = []; BA_AV = []; SE_V = []; SP_V = []; A_V = []; AUC = []; F1 = []
+    F1AV = [];
+    SE_AV = [];
+    SP_AV = [];
+    BA_AV = [];
+    SE_V = [];
+    SP_V = [];
+    A_V = [];
+    AUC = [];
+    F1 = []
     with torch.no_grad():
         for step, data in enumerate(validate_loader):
             # 获取图片和标签
@@ -56,11 +68,18 @@ def model_validate(cfg, Net, validate_loader, epoch):
 
             _, f1av, seav, spav, bacc, se, sp, acc, auc, f1 = \
                 metrics_test_drive_all(predict_av.squeeze(), label_av_.squeeze(),
-                                   ves.cpu().squeeze(), label_v_.squeeze(),
-                                   mask.squeeze(), cfg.v_a)
+                                       ves.cpu().squeeze(), label_v_.squeeze(),
+                                       mask.squeeze(), cfg.v_a)
 
-            F1AV.append(f1av); SE_AV.append(seav); SP_AV.append(spav);BA_AV.append(bacc)
-            SE_V.append(se);SP_V.append(sp);A_V.append(acc);AUC.append(auc);F1.append(f1)
+            F1AV.append(f1av);
+            SE_AV.append(seav);
+            SP_AV.append(spav);
+            BA_AV.append(bacc)
+            SE_V.append(se);
+            SP_V.append(sp);
+            A_V.append(acc);
+            AUC.append(auc);
+            F1.append(f1)
     # ================================ ##        相关结果指标显示及记录
     mean_accuracy_v = np.mean(np.mean(np.stack(F1AV)[:, 1]))
     dict_message_test = {
@@ -76,10 +95,21 @@ def model_validate(cfg, Net, validate_loader, epoch):
 
     return mean_accuracy_v
 
+
 from utils.data_utils import get_test_patches, recompone_overlap
 import tqdm
+
+
 def model_validate_patch(cfg, Net, validate_loader, epoch):
-    F1AV = []; SE_AV = []; SP_AV = []; BA_AV = []; SE_V = []; SP_V = []; A_V = []; AUC = []; F1 = []
+    F1AV = [];
+    SE_AV = [];
+    SP_AV = [];
+    BA_AV = [];
+    SE_V = [];
+    SP_V = [];
+    A_V = [];
+    AUC = [];
+    F1 = []
     with torch.no_grad():
         for step, data in enumerate(validate_loader):
             # 获取图片和标签
@@ -92,23 +122,31 @@ def model_validate_patch(cfg, Net, validate_loader, epoch):
             vessel = []
             for i in range(cnt):
                 output, ves = Net(inputs[i:i + 1])
-                outputs.append(output); vessel.append(ves)
+                outputs.append(output);
+                vessel.append(ves)
 
             outputs = torch.softmax(torch.stack(outputs).squeeze(), 1)
             pred_imgs = recompone_overlap(outputs.cpu().data, cfg.patch_size, cfg.patch_stride,
-                                          new_size[0], new_size[1],False)
+                                          new_size[0], new_size[1], False)
             _, predict_av = torch.max(pred_imgs, 1)
 
             vessel_ = recompone_overlap(torch.stack(vessel).cpu().data.squeeze(1), cfg.patch_size,
-                                        cfg.patch_stride, new_size[0], new_size[1],False)
+                                        cfg.patch_stride, new_size[0], new_size[1], False)
 
             _, f1av, seav, spav, bacc, se, sp, acc, auc, f1 = \
                 metrics_test_drive_all(predict_av.squeeze(), label_av_.squeeze(),
                                        vessel_.cpu().squeeze(), label_v_.squeeze(),
                                        mask.squeeze(), cfg.v_a)
 
-            F1AV.append(f1av);SE_AV.append(seav);SP_AV.append(spav);BA_AV.append(bacc)
-            SE_V.append(se);SP_V.append(sp);A_V.append(acc);AUC.append(auc); F1.append(f1)
+            F1AV.append(f1av);
+            SE_AV.append(seav);
+            SP_AV.append(spav);
+            BA_AV.append(bacc)
+            SE_V.append(se);
+            SP_V.append(sp);
+            A_V.append(acc);
+            AUC.append(auc);
+            F1.append(f1)
             # ================================ ##        相关结果指标显示及记录
         mean_accuracy_v = np.mean(np.mean(np.stack(F1AV)[:, 1]))
         dict_message_test = {

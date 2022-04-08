@@ -8,8 +8,9 @@ import torchvision.transforms.functional as F
 import random
 from utils.data_utils import decomposition_av, decomposition_av3, dataset_normalized
 
+
 class MyDataset(Dataset):
-    def __init__(self, dataset_name, list_file, channel=1, input_size = 512, is_train=True, transform=None):
+    def __init__(self, dataset_name, list_file, channel=1, input_size=512, is_train=True, transform=None):
         self.data_path_list = list_file
         self.imgs = []
         self.labels = []
@@ -20,6 +21,7 @@ class MyDataset(Dataset):
         self.transform = transform
         self.is_train = is_train
         self.dataset_name = dataset_name
+
         for name_img in os.listdir(self.data_path_list):
             if self.channel == 3:
                 img = Image.open(os.path.join(self.data_path_list, name_img)).convert('RGB')
@@ -60,7 +62,7 @@ class MyDataset(Dataset):
 
         for img in data:
             img = img.rotate(rotate_)
-            img = img.crop((x1, y1, x1+self.input_size, y1+self.input_size))
+            img = img.crop((x1, y1, x1 + self.input_size, y1 + self.input_size))
             output.append(img)
         output = tuple(output)
 
@@ -74,18 +76,20 @@ class MyDataset(Dataset):
         label_v = self.labels_v[index]
 
         if self.is_train:
-            if random.random() <0.5:
-                (img, mask, label1, label_v) = self.add_img(transforms.RandomHorizontalFlip(p=1), (img, mask, label1, label_v))
             if random.random() < 0.5:
-                (img, mask, label1, label_v) = self.add_img(transforms.RandomVerticalFlip(p=1), (img, mask, label1, label_v))
+                (img, mask, label1, label_v) = self.add_img(transforms.RandomHorizontalFlip(p=1),
+                                                            (img, mask, label1, label_v))
+            if random.random() < 0.5:
+                (img, mask, label1, label_v) = self.add_img(transforms.RandomVerticalFlip(p=1),
+                                                            (img, mask, label1, label_v))
             (img, mask, label1, label_v) = self.rotate_random_clip((img, mask, label1, label_v))
             img = transforms.ColorJitter(brightness=0.2, contrast=0.2, saturation=0.2, hue=0.2)(img)
 
             label = decomposition_av(label1)
 
             (img, mask) = self.add_img(transforms.ToTensor(), (img, mask))
-            mask[mask>0.5] = 1
-            mask[mask<0.5] = 0
+            mask[mask > 0.5] = 1
+            mask[mask < 0.5] = 0
 
             v = np.copy(np.asarray(label_v))
             v[v > 0] = 1
@@ -123,5 +127,3 @@ class MyDataset(Dataset):
             v = np.copy(np.asarray(label_v))
             v[v > 0] = 1
             return img, torch.tensor(label), torch.tensor(v), torch.squeeze(mask)
-
-
